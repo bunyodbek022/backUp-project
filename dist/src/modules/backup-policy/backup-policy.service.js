@@ -25,11 +25,14 @@ let BackupPolicyService = class BackupPolicyService {
         this.backupPolicyScheduler = backupPolicyScheduler;
     }
     async create(dto, currentUser) {
-        const source = await this.prisma.databaseSource.findUnique({
-            where: { id: dto.sourceId },
+        const sourceWhere = currentUser.role === client_1.UserRole.SUPERADMIN
+            ? { id: dto.sourceId }
+            : { id: dto.sourceId, userId: currentUser.id };
+        const source = await this.prisma.databaseSource.findFirst({
+            where: sourceWhere,
         });
         if (!source) {
-            throw new common_1.NotFoundException('Database source not found');
+            throw new common_1.NotFoundException('Database source not found or access denied');
         }
         const policy = await this.prisma.backupPolicy.create({
             data: {
@@ -70,27 +73,52 @@ let BackupPolicyService = class BackupPolicyService {
             },
         };
     }
-    async findAll() {
-        return this.prisma.backupPolicy.findMany({
-            orderBy: { id: 'desc' },
-            include: {
-                source: {
-                    select: {
-                        id: true,
-                        name: true,
-                        dbName: true,
-                        host: true,
-                        port: true,
-                        dbType: true,
-                        isActive: true,
+    async findAll(query, user) {
+        const page = query.page || 1;
+        const limit = query.limit || 10;
+        const search = query.search || '';
+        const skip = (page - 1) * limit;
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
+        const searchWhere = search
+            ? { policyName: { contains: search, mode: 'insensitive' } }
+            : {};
+        const where = { ...baseWhere, ...searchWhere };
+        const [total, data] = await this.prisma.$transaction([
+            this.prisma.backupPolicy.count({ where }),
+            this.prisma.backupPolicy.findMany({
+                where,
+                skip,
+                take: limit,
+                include: {
+                    source: {
+                        select: {
+                            id: true,
+                            name: true,
+                            dbName: true,
+                            dbType: true,
+                            host: true,
+                            port: true,
+                            isActive: true,
+                        },
                     },
                 },
+                orderBy: { id: 'desc' },
+            }),
+        ]);
+        return {
+            data,
+            meta: {
+                total,
+                page,
+                limit,
+                lastPage: Math.ceil(total / limit),
             },
-        });
+        };
     }
-    async findOne(id) {
-        const policy = await this.prisma.backupPolicy.findUnique({
-            where: { id },
+    async findOne(id, user) {
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+        const policy = await this.prisma.backupPolicy.findFirst({
+            where: baseWhere,
             include: {
                 source: {
                     select: {
@@ -113,10 +141,13 @@ let BackupPolicyService = class BackupPolicyService {
         return policy;
     }
     async update(id, dto, currentUser) {
-        await this.findOne(id);
+        await this.findOne(id, currentUser);
         if (dto.sourceId) {
-            const source = await this.prisma.databaseSource.findUnique({
-                where: { id: dto.sourceId },
+            const sourceWhere = currentUser.role === client_1.UserRole.SUPERADMIN
+                ? { id: dto.sourceId }
+                : { id: dto.sourceId, userId: currentUser.id };
+            const source = await this.prisma.databaseSource.findFirst({
+                where: sourceWhere,
             });
             if (!source) {
                 throw new common_1.NotFoundException('Database source not found');
@@ -155,23 +186,15 @@ let BackupPolicyService = class BackupPolicyService {
             },
         };
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, user) {
+        await this.findOne(id, user);
         this.backupPolicyScheduler.removePolicyJob(id);
         return this.prisma.backupPolicy.delete({
             where: { id },
         });
     }
     async toggleActive(id, currentUser) {
-        const policy = await this.prisma.backupPolicy.findUnique({
-            where: { id },
-            include: {
-                source: true,
-            },
-        });
-        if (!policy) {
-            throw new common_1.NotFoundException('Backup policy not found');
-        }
+        const policy = await this.findOne(id, currentUser);
         const updated = await this.prisma.backupPolicy.update({
             where: { id },
             data: {

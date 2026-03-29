@@ -52,7 +52,8 @@ const prisma_service_1 = __importDefault(require("../../Prisma/prisma.service"))
 const child_process_1 = require("child_process");
 const util_1 = require("util");
 const fs = __importStar(require("fs"));
-const execAsync = (0, util_1.promisify)(child_process_1.exec);
+const encryption_util_1 = require("../../utils/encryption.util");
+const execFileAsync = (0, util_1.promisify)(child_process_1.execFile);
 let RestoreService = class RestoreService {
     prisma;
     constructor(prisma) {
@@ -73,6 +74,9 @@ let RestoreService = class RestoreService {
         }
         if (!backup.source) {
             throw new common_1.NotFoundException('Database source not found for this backup');
+        }
+        if (currentUser.role !== client_1.UserRole.SUPERADMIN && backup.source.userId !== currentUser.id) {
+            throw new common_1.NotFoundException('Backup or database source not found or access denied');
         }
         const source = backup.source;
         if (!source.isActive) {
@@ -96,21 +100,20 @@ let RestoreService = class RestoreService {
             },
         });
         try {
-            const command = [
-                `PGPASSWORD="${source.password}"`,
-                `psql`,
-                `-h "${source.host}"`,
-                `-p "${source.port}"`,
-                `-U "${source.username}"`,
-                `-d "${source.dbName}"`,
-                `< "${backup.filePath}"`,
-            ].join(' ');
-            await execAsync(command, {
+            const decryptedPassword = (0, encryption_util_1.decrypt)(source.password);
+            const args = [
+                '-h', source.host,
+                '-p', source.port.toString(),
+                '-U', source.username,
+                '-d', source.dbName,
+                '-f', backup.filePath,
+                '-v', 'ON_ERROR_STOP=1'
+            ];
+            await execFileAsync('psql', args, {
                 env: {
                     ...process.env,
-                    PGPASSWORD: source.password,
+                    PGPASSWORD: decryptedPassword,
                 },
-                shell: '/bin/bash',
             });
             const finishedAt = new Date();
             const durationSeconds = Math.floor((finishedAt.getTime() - startedAt.getTime()) / 1000);
@@ -221,45 +224,70 @@ let RestoreService = class RestoreService {
             return failed;
         }
     }
-    async findAll() {
-        return this.prisma.restore.findMany({
-            orderBy: {
-                id: 'desc',
+    async findAll(query, user) {
+        const page = query.page || 1;
+        const limit = query.limit || 10;
+        const search = query.search || '';
+        const skip = (page - 1) * limit;
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
+        const searchWhere = search
+            ? { targetDbName: { contains: search, mode: 'insensitive' } }
+            : {};
+        const where = { ...baseWhere, ...searchWhere };
+        const [total, data] = await this.prisma.$transaction([
+            this.prisma.restore.count({ where }),
+            this.prisma.restore.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: {
+                    id: 'desc',
+                },
+                include: {
+                    backup: {
+                        select: {
+                            id: true,
+                            backupName: true,
+                            fileName: true,
+                            status: true,
+                        },
+                    },
+                    source: {
+                        select: {
+                            id: true,
+                            name: true,
+                            dbName: true,
+                            host: true,
+                            port: true,
+                            dbType: true,
+                            isActive: true,
+                        },
+                    },
+                    restoredBy: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            email: true,
+                            role: true,
+                        },
+                    },
+                },
+            }),
+        ]);
+        return {
+            data,
+            meta: {
+                total,
+                page,
+                limit,
+                lastPage: Math.ceil(total / limit),
             },
-            include: {
-                backup: {
-                    select: {
-                        id: true,
-                        backupName: true,
-                        fileName: true,
-                        status: true,
-                    },
-                },
-                source: {
-                    select: {
-                        id: true,
-                        name: true,
-                        dbName: true,
-                        host: true,
-                        port: true,
-                        dbType: true,
-                        isActive: true,
-                    },
-                },
-                restoredBy: {
-                    select: {
-                        id: true,
-                        fullName: true,
-                        email: true,
-                        role: true,
-                    },
-                },
-            },
-        });
+        };
     }
-    async findOne(id) {
-        const restore = await this.prisma.restore.findUnique({
-            where: { id },
+    async findOne(id, user) {
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+        const restore = await this.prisma.restore.findFirst({
+            where: baseWhere,
             include: {
                 backup: {
                     select: {

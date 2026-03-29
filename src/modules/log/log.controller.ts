@@ -16,13 +16,16 @@ import {
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LogService } from './log.service';
 import { QueryLogDto } from './dto/query-log.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Logs')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
 @Controller('logs')
 export class LogController {
   constructor(private readonly logService: LogService) {}
@@ -30,15 +33,15 @@ export class LogController {
   @ApiOperation({ summary: 'Get all system logs' })
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.OPERATOR)
   @Get()
-  findAll(@Query() query: QueryLogDto) {
-    return this.logService.findAll(query);
+  findAll(@Query() query: PaginationDto, @CurrentUser() user: any) {
+    return this.logService.findAll(query, user);
   }
 
   @ApiOperation({ summary: 'Get log by id' })
   @ApiParam({ name: 'id', example: 1 })
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.OPERATOR)
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.logService.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.logService.findOne(id, user);
   }
 }

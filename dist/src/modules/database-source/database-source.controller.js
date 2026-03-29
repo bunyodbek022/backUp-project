@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DatabaseSourceController = void 0;
 const common_1 = require("@nestjs/common");
+const pagination_dto_1 = require("../../common/dto/pagination.dto");
 const swagger_1 = require("@nestjs/swagger");
 const client_1 = require("@prisma/client");
 const database_source_service_1 = require("./database-source.service");
@@ -21,29 +22,31 @@ const create_database_source_dto_1 = require("./dto/create-database-source.dto")
 const update_database_source_dto_1 = require("./dto/update-database-source.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
+const subscription_guard_1 = require("../auth/guards/subscription.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 let DatabaseSourceController = class DatabaseSourceController {
     databaseSourceService;
     constructor(databaseSourceService) {
         this.databaseSourceService = databaseSourceService;
     }
-    create(dto) {
-        return this.databaseSourceService.create(dto);
+    create(dto, user) {
+        return this.databaseSourceService.create(dto, user);
     }
-    findAll() {
-        return this.databaseSourceService.findAll();
+    findAll(query, user) {
+        return this.databaseSourceService.findAll(query, user);
     }
-    findOne(id) {
-        return this.databaseSourceService.findOne(id);
+    findOne(id, user) {
+        return this.databaseSourceService.findOne(id, user);
     }
-    update(id, dto) {
-        return this.databaseSourceService.update(id, dto);
+    update(id, dto, user) {
+        return this.databaseSourceService.update(id, dto, user);
     }
-    toggleActive(id) {
-        return this.databaseSourceService.toggleActive(id);
+    toggleActive(id, user) {
+        return this.databaseSourceService.toggleActive(id, user);
     }
-    remove(id) {
-        return this.databaseSourceService.remove(id);
+    remove(id, user) {
+        return this.databaseSourceService.remove(id, user);
     }
 };
 exports.DatabaseSourceController = DatabaseSourceController;
@@ -52,16 +55,19 @@ __decorate([
     (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN, client_1.UserRole.ADMIN),
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_database_source_dto_1.CreateDatabaseSourceDto]),
+    __metadata("design:paramtypes", [create_database_source_dto_1.CreateDatabaseSourceDto, Object]),
     __metadata("design:returntype", void 0)
 ], DatabaseSourceController.prototype, "create", null);
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Get all database sources' }),
     (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN, client_1.UserRole.ADMIN, client_1.UserRole.OPERATOR),
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [pagination_dto_1.PaginationDto, Object]),
     __metadata("design:returntype", void 0)
 ], DatabaseSourceController.prototype, "findAll", null);
 __decorate([
@@ -70,8 +76,9 @@ __decorate([
     (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN, client_1.UserRole.ADMIN, client_1.UserRole.OPERATOR),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], DatabaseSourceController.prototype, "findOne", null);
 __decorate([
@@ -81,8 +88,9 @@ __decorate([
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, update_database_source_dto_1.UpdateDatabaseSourceDto]),
+    __metadata("design:paramtypes", [Number, update_database_source_dto_1.UpdateDatabaseSourceDto, Object]),
     __metadata("design:returntype", void 0)
 ], DatabaseSourceController.prototype, "update", null);
 __decorate([
@@ -91,24 +99,26 @@ __decorate([
     (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN, client_1.UserRole.ADMIN),
     (0, common_1.Patch)(':id/toggle-active'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], DatabaseSourceController.prototype, "toggleActive", null);
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Delete a database source' }),
     (0, swagger_1.ApiParam)({ name: 'id', example: 1 }),
-    (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN, client_1.UserRole.ADMIN),
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], DatabaseSourceController.prototype, "remove", null);
 exports.DatabaseSourceController = DatabaseSourceController = __decorate([
     (0, swagger_1.ApiTags)('Database Sources'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, subscription_guard_1.SubscriptionGuard),
     (0, common_1.Controller)('database-sources'),
     __metadata("design:paramtypes", [database_source_service_1.DatabaseSourceService])
 ], DatabaseSourceController);

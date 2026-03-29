@@ -8,7 +8,9 @@ import PrismaService from 'src/Prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcryptjs';
 import { JwtPayloadType } from './types/jwt-payload.type';
-import { LogAction, LogLevel } from '@prisma/client';
+import { LogAction, LogLevel, UserRole } from '@prisma/client';
+import { RegisterDto } from './dto/register.dto';
+import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
@@ -61,6 +63,62 @@ export class AuthService {
         fullName: user.fullName,
         email: user.email,
         role: user.role,
+      },
+    };
+  }
+
+  async register(dto: RegisterDto) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('User with this email already exists');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(dto.password, salt);
+
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 30); // 30-day free trial
+
+    const user = await this.prisma.user.create({
+      data: {
+        fullName: dto.fullName,
+        email: dto.email,
+        password: hashedPassword,
+        role: UserRole.ADMIN, // Defaulting as discussed
+        trialEndsAt,
+        subscriptionStatus: 'trialing',
+      },
+    });
+
+    const payload: JwtPayloadType = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
+
+    await this.prisma.systemLog.create({
+      data: {
+        level: LogLevel.INFO,
+        action: LogAction.LOGIN, // Note: Maybe add a new LogAction for REGISTER in future, using LOGIN for now
+        message: `New user registered: ${user.email}`,
+        userId: user.id,
+      },
+    });
+
+    return {
+      message: 'Registration successful',
+      accessToken,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        trialEndsAt: user.trialEndsAt,
       },
     };
   }

@@ -2,11 +2,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { LogAction, LogLevel } from '@prisma/client';
+import { LogAction, LogLevel, UserRole } from '@prisma/client';
 import PrismaService from 'src/Prisma/prisma.service';
 import { CreateBackupPolicyDto } from './dto/create-backup-policy.dto';
 import { UpdateBackupPolicyDto } from './dto/update-backup-policy.dto';
 import { BackupPolicyScheduler } from './backup-policy.scheduler';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class BackupPolicyService {
@@ -16,12 +17,16 @@ export class BackupPolicyService {
   ) {}
 
   async create(dto: CreateBackupPolicyDto, currentUser: any) {
-    const source = await this.prisma.databaseSource.findUnique({
-      where: { id: dto.sourceId },
+    const sourceWhere = currentUser.role === UserRole.SUPERADMIN 
+      ? { id: dto.sourceId } 
+      : { id: dto.sourceId, userId: currentUser.id };
+
+    const source = await this.prisma.databaseSource.findFirst({
+      where: sourceWhere,
     });
 
     if (!source) {
-      throw new NotFoundException('Database source not found');
+      throw new NotFoundException('Database source not found or access denied');
     }
 
     const policy = await this.prisma.backupPolicy.create({
@@ -67,28 +72,58 @@ export class BackupPolicyService {
     };
   }
 
-  async findAll() {
-    return this.prisma.backupPolicy.findMany({
-      orderBy: { id: 'desc' },
-      include: {
-        source: {
-          select: {
-            id: true,
-            name: true,
-            dbName: true,
-            host: true,
-            port: true,
-            dbType: true,
-            isActive: true,
+  async findAll(query: PaginationDto, user: any) {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const search = query.search || '';
+    const skip = (page - 1) * limit;
+
+    const baseWhere = user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
+    const searchWhere = search
+      ? { policyName: { contains: search, mode: 'insensitive' } }
+      : {};
+
+    const where: any = { ...baseWhere, ...searchWhere };
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.backupPolicy.count({ where }),
+      this.prisma.backupPolicy.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          source: {
+            select: {
+              id: true,
+              name: true,
+              dbName: true,
+              dbType: true,
+              host: true,
+              port: true,
+              isActive: true,
+            },
           },
         },
+        orderBy: { id: 'desc' },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        lastPage: Math.ceil(total / limit),
       },
-    });
+    };
   }
 
-  async findOne(id: number) {
-    const policy = await this.prisma.backupPolicy.findUnique({
-      where: { id },
+  async findOne(id: number, user: any) {
+    const baseWhere = user.role === UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+
+    const policy = await this.prisma.backupPolicy.findFirst({
+      where: baseWhere,
       include: {
         source: {
           select: {
@@ -114,11 +149,15 @@ export class BackupPolicyService {
   }
 
   async update(id: number, dto: UpdateBackupPolicyDto, currentUser: any) {
-    await this.findOne(id);
+    await this.findOne(id, currentUser);
 
     if (dto.sourceId) {
-      const source = await this.prisma.databaseSource.findUnique({
-        where: { id: dto.sourceId },
+      const sourceWhere = currentUser.role === UserRole.SUPERADMIN 
+        ? { id: dto.sourceId } 
+        : { id: dto.sourceId, userId: currentUser.id };
+
+      const source = await this.prisma.databaseSource.findFirst({
+        where: sourceWhere,
       });
 
       if (!source) {
@@ -164,8 +203,8 @@ export class BackupPolicyService {
     };
   }
 
-  async remove(id: number) {
-    await this.findOne(id);
+  async remove(id: number, user: any) {
+    await this.findOne(id, user);
 
     this.backupPolicyScheduler.removePolicyJob(id);
 
@@ -175,16 +214,7 @@ export class BackupPolicyService {
   }
 
   async toggleActive(id: number, currentUser: any) {
-    const policy = await this.prisma.backupPolicy.findUnique({
-      where: { id },
-      include: {
-        source: true,
-      },
-    });
-
-    if (!policy) {
-      throw new NotFoundException('Backup policy not found');
-    }
+    const policy = await this.findOne(id, currentUser);
 
     const updated = await this.prisma.backupPolicy.update({
       where: { id },

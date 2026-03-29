@@ -1,19 +1,29 @@
 import PrismaService from 'src/Prisma/prisma.service';
 import { CreateBackupDto } from './dto/create-backup.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 export declare class BackupService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     private serializeBackup;
     createBackup(dto: CreateBackupDto, currentUser: any): Promise<any>;
-    findAll(): Promise<any[]>;
-    findOne(id: number): Promise<any>;
-    getBackupFile(id: number): Promise<{
+    findAll(query: PaginationDto, user: any): Promise<{
+        data: any[];
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            lastPage: number;
+        };
+    }>;
+    findOne(id: number, user: any): Promise<any>;
+    getBackupFile(id: number, user: any): Promise<{
         filePath: string;
         id: number;
         sourceId: number;
+        backupType: import("@prisma/client").$Enums.BackupType;
+        notes: string | null;
         backupName: string;
         fileName: string;
-        backupType: import("@prisma/client").$Enums.BackupType;
         fileSize: bigint | null;
         status: import("@prisma/client").$Enums.BackupStatus;
         startedAt: Date;
@@ -21,15 +31,14 @@ export declare class BackupService {
         durationSeconds: number | null;
         checksum: string | null;
         storageType: import("@prisma/client").$Enums.StorageType;
-        createdById: number | null;
-        notes: string | null;
         errorMessage: string | null;
+        createdById: number | null;
     }>;
     remove(id: number, currentUser: any): Promise<{
         message: string;
         id: number;
     }>;
-    getStats(): Promise<{
+    getStats(user: any): Promise<{
         totalBackups: number;
         successBackups: number;
         failedBackups: number;

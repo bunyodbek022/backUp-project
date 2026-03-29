@@ -8,15 +8,18 @@ import {
   BackupType,
   LogAction,
   LogLevel,
+  UserRole,
 } from '@prisma/client';
 import PrismaService from 'src/Prisma/prisma.service';
 import { CreateBackupDto } from './dto/create-backup.dto';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
+import { decrypt } from '../../utils/encryption.util';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class BackupService {
@@ -30,12 +33,16 @@ export class BackupService {
   }
 
   async createBackup(dto: CreateBackupDto, currentUser: any) {
-    const source = await this.prisma.databaseSource.findUnique({
-      where: { id: dto.sourceId },
+    const sourceWhere = currentUser.role === UserRole.SUPERADMIN
+      ? { id: dto.sourceId }
+      : { id: dto.sourceId, userId: currentUser.id };
+
+    const source = await this.prisma.databaseSource.findFirst({
+      where: sourceWhere,
     });
 
     if (!source) {
-      throw new NotFoundException('Database source not found');
+      throw new NotFoundException('Database source not found or access denied');
     }
 
     if (!source.isActive) {
@@ -70,23 +77,22 @@ export class BackupService {
     });
 
     try {
-      const command = [
-        `PGPASSWORD="${source.password}"`,
-        `pg_dump`,
-        `-h "${source.host}"`,
-        `-p "${source.port}"`,
-        `-U "${source.username}"`,
-        `-d "${source.dbName}"`,
-        `-F p`,
-        `> "${filePath}"`,
-      ].join(' ');
+      const decryptedPassword = decrypt(source.password);
 
-      await execAsync(command, {
+      const args = [
+        '-h', source.host,
+        '-p', source.port.toString(),
+        '-U', source.username,
+        '-d', source.dbName,
+        '-F', 'p',
+        '-f', filePath
+      ];
+
+      await execFileAsync('pg_dump', args, {
         env: {
           ...process.env,
-          PGPASSWORD: source.password,
+          PGPASSWORD: decryptedPassword,
         },
-        shell: '/bin/bash',
       });
 
       const stats = fs.statSync(filePath);
@@ -192,42 +198,70 @@ export class BackupService {
     }
   }
 
-  async findAll() {
-    const backups = await this.prisma.backup.findMany({
-      include: {
-        source: {
-          select: {
-            id: true,
-            name: true,
-            dbName: true,
-            host: true,
-            port: true,
-            dbType: true,
-            isActive: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
-      orderBy: {
-        id: 'desc',
-      },
-    });
+  async findAll(query: PaginationDto, user: any) {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const search = query.search || '';
+    const skip = (page - 1) * limit;
 
-    return backups.map((backup) => this.serializeBackup(backup));
+    const baseWhere = user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
+    const searchWhere = search
+      ? { backupName: { contains: search, mode: 'insensitive' } }
+      : {};
+
+    const where: any = { ...baseWhere, ...searchWhere };
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.backup.count({ where }),
+      this.prisma.backup.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          source: {
+            select: {
+              id: true,
+              name: true,
+              dbName: true,
+              host: true,
+              port: true,
+              dbType: true,
+              isActive: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
+        orderBy: {
+          id: 'desc',
+        },
+      }),
+    ]);
+
+    return {
+      data: data.map((backup) => this.serializeBackup(backup)),
+      meta: {
+        total,
+        page,
+        limit,
+        lastPage: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async findOne(id: number) {
-    const backup = await this.prisma.backup.findUnique({
-      where: { id },
+  async findOne(id: number, user: any) {
+    const baseWhere = user.role === UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+
+    const backup = await this.prisma.backup.findFirst({
+      where: baseWhere,
       include: {
         source: {
           select: {
@@ -261,9 +295,11 @@ export class BackupService {
     return this.serializeBackup(backup);
   }
 
-  async getBackupFile(id: number) {
-    const backup = await this.prisma.backup.findUnique({
-      where: { id },
+  async getBackupFile(id: number, user: any) {
+    const baseWhere = user.role === UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+
+    const backup = await this.prisma.backup.findFirst({
+      where: baseWhere,
     });
 
     if (!backup) {
@@ -287,8 +323,10 @@ export class BackupService {
   }
 
   async remove(id: number, currentUser: any) {
-    const backup = await this.prisma.backup.findUnique({
-      where: { id },
+    const baseWhere = currentUser.role === UserRole.SUPERADMIN ? { id } : { id, source: { userId: currentUser.id } };
+
+    const backup = await this.prisma.backup.findFirst({
+      where: baseWhere,
       include: {
         restores: {
           select: { id: true },
@@ -330,20 +368,23 @@ export class BackupService {
     };
   }
 
-  async getStats() {
+  async getStats(user: any) {
+    const baseWhere = user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
+
     const [totalBackups, successBackups, failedBackups, runningBackups, latestBackup] =
       await Promise.all([
-        this.prisma.backup.count(),
+        this.prisma.backup.count({ where: baseWhere }),
         this.prisma.backup.count({
-          where: { status: BackupStatus.SUCCESS },
+          where: { status: BackupStatus.SUCCESS, ...baseWhere },
         }),
         this.prisma.backup.count({
-          where: { status: BackupStatus.FAILED },
+          where: { status: BackupStatus.FAILED, ...baseWhere },
         }),
         this.prisma.backup.count({
-          where: { status: BackupStatus.RUNNING },
+          where: { status: BackupStatus.RUNNING, ...baseWhere },
         }),
         this.prisma.backup.findFirst({
+          where: baseWhere,
           orderBy: {
             startedAt: 'desc',
           },

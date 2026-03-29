@@ -10,16 +10,39 @@ model User {
   id        Int         @id @default(autoincrement())
   fullName  String      @map("full_name")
   email     String      @unique
-  password  String
-  role      UserRole    @default(ADMIN)
-  isActive  Boolean     @default(true) @map("is_active")
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
-  backups   Backup[]    @relation("BackupCreatedBy")
-  restores  Restore[]   @relation("RestoreCreatedBy")
-  logs      SystemLog[]
+  password           String
+  role               UserRole         @default(ADMIN)
+  isActive           Boolean          @default(true) @map("is_active")
+  trialEndsAt        DateTime?        @map("trial_ends_at")
+  subscriptionStatus String?          @default("trialing") @map("subscription_status")
+  stripeCustomerId   String?          @map("stripe_customer_id")
+  planId             Int?             @map("plan_id")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  plan               SubscriptionPlan? @relation(fields: [planId], references: [id])
+  databaseSources    DatabaseSource[] @relation("UserDatabaseSources")
+  backups            Backup[]         @relation("BackupCreatedBy")
+  restores           Restore[]        @relation("RestoreCreatedBy")
+  logs               SystemLog[]
 
   @@map("users")
+}
+
+model SubscriptionPlan {
+  id            Int      @id @default(autoincrement())
+  name          String
+  price         Decimal
+  currency      String   @default("USD")
+  interval      String   @default("month")
+  features      String[]
+  isActive      Boolean  @default(true) @map("is_active")
+  stripePriceId String?  @map("stripe_price_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  users         User[]
+
+  @@map("subscription_plans")
 }
 
 model DatabaseSource {
@@ -32,13 +55,16 @@ model DatabaseSource {
   username  String
   password  String
   isActive  Boolean        @default(true) @map("is_active")
+  userId    Int            @default(1) @map("user_id") // Temporary default to prevent migration failure. Seeded SuperAdmin is 1.
   createdAt DateTime       @default(now()) @map("created_at")
   updatedAt DateTime       @updatedAt @map("updated_at")
+  user      User           @relation("UserDatabaseSources", fields: [userId], references: [id], onDelete: Cascade)
   policies  BackupPolicy[]
   backups   Backup[]
   restores  Restore[]
   logs      SystemLog[]
 
+  @@index([userId])
   @@map("database_sources")
 }
 

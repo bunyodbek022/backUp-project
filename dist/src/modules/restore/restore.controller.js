@@ -20,8 +20,10 @@ const restore_service_1 = require("./restore.service");
 const create_restore_dto_1 = require("./dto/create-restore.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
+const subscription_guard_1 = require("../auth/guards/subscription.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
+const pagination_dto_1 = require("../../common/dto/pagination.dto");
 let RestoreController = class RestoreController {
     restoreService;
     constructor(restoreService) {
@@ -30,11 +32,11 @@ let RestoreController = class RestoreController {
     create(dto, user) {
         return this.restoreService.createRestore(dto, user);
     }
-    findAll() {
-        return this.restoreService.findAll();
+    findAll(query, user) {
+        return this.restoreService.findAll(query, user);
     }
-    findOne(id) {
-        return this.restoreService.findOne(id);
+    findOne(id, user) {
+        return this.restoreService.findOne(id, user);
     }
 };
 exports.RestoreController = RestoreController;
@@ -52,8 +54,10 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Get all restores' }),
     (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.SUPERADMIN, client_1.UserRole.OPERATOR),
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [pagination_dto_1.PaginationDto, Object]),
     __metadata("design:returntype", void 0)
 ], RestoreController.prototype, "findAll", null);
 __decorate([
@@ -62,14 +66,15 @@ __decorate([
     (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.SUPERADMIN, client_1.UserRole.OPERATOR),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], RestoreController.prototype, "findOne", null);
 exports.RestoreController = RestoreController = __decorate([
     (0, swagger_1.ApiTags)('Restores'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, subscription_guard_1.SubscriptionGuard),
     (0, common_1.Controller)('restores'),
     __metadata("design:paramtypes", [restore_service_1.RestoreService])
 ], RestoreController);

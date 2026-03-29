@@ -10,6 +10,8 @@ import { RestoreModule } from './modules/restore/restore.module';
 import { LogModule } from './modules/log/log.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BackupPolicyModule } from './modules/backup-policy/backup-policy.module';
+import { SubscriptionPlanModule } from './modules/subscription-plan/subscription-plan.module';
+import { SuperadminModule } from './modules/superadmin/superadmin.module';
 
 @Module({
     imports: [
@@ -24,6 +26,8 @@ import { BackupPolicyModule } from './modules/backup-policy/backup-policy.module
         RestoreModule,
         LogModule,
         BackupPolicyModule,
+        SubscriptionPlanModule,
+        SuperadminModule,
     ],
     controllers: [AppController],
     providers: [AppService],

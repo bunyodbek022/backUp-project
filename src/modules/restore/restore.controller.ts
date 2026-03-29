@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -18,12 +19,14 @@ import { RestoreService } from './restore.service';
 import { CreateRestoreDto } from './dto/create-restore.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Restores')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
 @Controller('restores')
 export class RestoreController {
   constructor(private readonly restoreService: RestoreService) {}
@@ -38,15 +41,15 @@ export class RestoreController {
   @ApiOperation({ summary: 'Get all restores' })
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.OPERATOR)
   @Get()
-  findAll() {
-    return this.restoreService.findAll();
+  findAll(@Query() query: PaginationDto, @CurrentUser() user: any) {
+    return this.restoreService.findAll(query, user);
   }
 
   @ApiOperation({ summary: 'Get restore by id' })
   @ApiParam({ name: 'id', example: 1 })
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.OPERATOR)
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.restoreService.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.restoreService.findOne(id, user);
   }
 }

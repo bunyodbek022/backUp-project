@@ -14,14 +14,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DatabaseSourceService = void 0;
 const common_1 = require("@nestjs/common");
+const client_1 = require("@prisma/client");
 const prisma_service_1 = __importDefault(require("../../Prisma/prisma.service"));
+const encryption_util_1 = require("../../utils/encryption.util");
 let DatabaseSourceService = class DatabaseSourceService {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async create(dto) {
-        return this.prisma.databaseSource.create({
+    sanitizeSource(source) {
+        if (source && source.password) {
+            source.password = '********';
+        }
+        return source;
+    }
+    async create(dto, user) {
+        const source = await this.prisma.databaseSource.create({
             data: {
                 name: dto.name,
                 dbType: dto.dbType,
@@ -29,40 +37,86 @@ let DatabaseSourceService = class DatabaseSourceService {
                 port: dto.port,
                 dbName: dto.dbName,
                 username: dto.username,
-                password: dto.password,
+                password: (0, encryption_util_1.encrypt)(dto.password),
                 isActive: dto.isActive ?? true,
+                userId: user.id,
             },
         });
+        return this.sanitizeSource(source);
     }
-    async findAll() {
-        return this.prisma.databaseSource.findMany({
-            orderBy: { id: 'desc' },
-        });
+    async findAll(query, user) {
+        const page = query.page || 1;
+        const limit = query.limit || 10;
+        const search = query.search || '';
+        const skip = (page - 1) * limit;
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? {} : { userId: user.id };
+        const searchWhere = search
+            ? {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { host: { contains: search, mode: 'insensitive' } },
+                    { dbName: { contains: search, mode: 'insensitive' } },
+                ],
+            }
+            : {};
+        const where = { ...baseWhere, ...searchWhere };
+        const [total, data] = await this.prisma.$transaction([
+            this.prisma.databaseSource.count({ where }),
+            this.prisma.databaseSource.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { id: 'desc' },
+            }),
+        ]);
+        const sanitizedData = data.map((s) => this.sanitizeSource(s));
+        return {
+            data: sanitizedData,
+            meta: {
+                total,
+                page,
+                limit,
+                lastPage: Math.ceil(total / limit),
+            },
+        };
     }
-    async findOne(id) {
-        const source = await this.prisma.databaseSource.findUnique({
-            where: { id },
+    async findOne(id, user) {
+        const whereCondition = user.role === client_1.UserRole.SUPERADMIN ? { id } : { id, userId: user.id };
+        const source = await this.prisma.databaseSource.findFirst({
+            where: whereCondition,
         });
         if (!source) {
             throw new common_1.NotFoundException('Database source not found');
         }
-        return source;
+        return this.sanitizeSource(source);
     }
-    async update(id, dto) {
-        await this.findOne(id);
-        return this.prisma.databaseSource.update({
+    async update(id, dto, user) {
+        await this.findOne(id, user);
+        const updateData = { ...dto };
+        if (updateData.password === '********') {
+            delete updateData.password;
+        }
+        else if (updateData.password) {
+            updateData.password = (0, encryption_util_1.encrypt)(updateData.password);
+        }
+        const source = await this.prisma.databaseSource.update({
             where: { id },
-            data: dto,
+            data: updateData,
         });
+        return this.sanitizeSource(source);
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, user) {
+        await this.findOne(id, user);
+        await this.prisma.systemLog.updateMany({
+            where: { sourceId: id },
+            data: { sourceId: null },
+        });
         return this.prisma.databaseSource.delete({
             where: { id },
         });
     }
-    async toggleActive(id) {
-        const source = await this.findOne(id);
+    async toggleActive(id, user) {
+        const source = await this.findOne(id, user);
         return this.prisma.databaseSource.update({
             where: { id },
             data: {

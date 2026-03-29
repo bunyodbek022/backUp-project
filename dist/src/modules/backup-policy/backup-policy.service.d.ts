@@ -2,6 +2,7 @@ import PrismaService from 'src/Prisma/prisma.service';
 import { CreateBackupPolicyDto } from './dto/create-backup-policy.dto';
 import { UpdateBackupPolicyDto } from './dto/update-backup-policy.dto';
 import { BackupPolicyScheduler } from './backup-policy.scheduler';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 export declare class BackupPolicyService {
     private readonly prisma;
     private readonly backupPolicyScheduler;
@@ -17,57 +18,65 @@ export declare class BackupPolicyService {
             isActive: boolean;
         };
         id: number;
-        sourceId: number;
-        backupType: import("@prisma/client").$Enums.BackupType;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        sourceId: number;
+        backupType: import("@prisma/client").$Enums.BackupType;
         policyName: string;
         scheduleCron: string;
         retentionDays: number;
         maxBackups: number | null;
     }>;
-    findAll(): Promise<({
-        source: {
+    findAll(query: PaginationDto, user: any): Promise<{
+        data: ({
+            source: {
+                id: number;
+                isActive: boolean;
+                name: string;
+                dbType: import("@prisma/client").$Enums.DatabaseType;
+                host: string;
+                port: number;
+                dbName: string;
+            };
+        } & {
             id: number;
-            name: string;
-            dbType: import("@prisma/client").$Enums.DatabaseType;
-            host: string;
-            port: number;
-            dbName: string;
-            isActive: boolean;
-        };
-    } & {
-        id: number;
-        sourceId: number;
-        backupType: import("@prisma/client").$Enums.BackupType;
-        isActive: boolean;
-        createdAt: Date;
-        updatedAt: Date;
-        policyName: string;
-        scheduleCron: string;
-        retentionDays: number;
-        maxBackups: number | null;
-    })[]>;
-    findOne(id: number): Promise<{
-        source: {
-            id: number;
-            name: string;
-            dbType: import("@prisma/client").$Enums.DatabaseType;
-            host: string;
-            port: number;
-            dbName: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            sourceId: number;
+            backupType: import("@prisma/client").$Enums.BackupType;
+            policyName: string;
+            scheduleCron: string;
+            retentionDays: number;
+            maxBackups: number | null;
+        })[];
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            lastPage: number;
+        };
+    }>;
+    findOne(id: number, user: any): Promise<{
+        source: {
+            id: number;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+            dbType: import("@prisma/client").$Enums.DatabaseType;
+            host: string;
+            port: number;
+            dbName: string;
         };
     } & {
         id: number;
-        sourceId: number;
-        backupType: import("@prisma/client").$Enums.BackupType;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        sourceId: number;
+        backupType: import("@prisma/client").$Enums.BackupType;
         policyName: string;
         scheduleCron: string;
         retentionDays: number;
@@ -84,23 +93,23 @@ export declare class BackupPolicyService {
             isActive: boolean;
         };
         id: number;
-        sourceId: number;
-        backupType: import("@prisma/client").$Enums.BackupType;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        sourceId: number;
+        backupType: import("@prisma/client").$Enums.BackupType;
         policyName: string;
         scheduleCron: string;
         retentionDays: number;
         maxBackups: number | null;
     }>;
-    remove(id: number): Promise<{
+    remove(id: number, user: any): Promise<{
         id: number;
-        sourceId: number;
-        backupType: import("@prisma/client").$Enums.BackupType;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        sourceId: number;
+        backupType: import("@prisma/client").$Enums.BackupType;
         policyName: string;
         scheduleCron: string;
         retentionDays: number;
@@ -117,11 +126,11 @@ export declare class BackupPolicyService {
             isActive: boolean;
         };
         id: number;
-        sourceId: number;
-        backupType: import("@prisma/client").$Enums.BackupType;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        sourceId: number;
+        backupType: import("@prisma/client").$Enums.BackupType;
         policyName: string;
         scheduleCron: string;
         retentionDays: number;

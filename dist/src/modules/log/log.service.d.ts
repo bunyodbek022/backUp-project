@@ -3,7 +3,7 @@ import { QueryLogDto } from './dto/query-log.dto';
 export declare class LogService {
     private readonly prisma;
     constructor(prisma: PrismaService);
-    findAll(query: QueryLogDto): Promise<{
+    findAll(query: QueryLogDto, user: any): Promise<{
         data: ({
             user: {
                 id: number;
@@ -24,10 +24,10 @@ export declare class LogService {
             id: number;
             createdAt: Date;
             sourceId: number | null;
+            userId: number | null;
             level: import("@prisma/client").$Enums.LogLevel;
             action: import("@prisma/client").$Enums.LogAction | null;
             message: string;
-            userId: number | null;
         })[];
         meta: {
             total: number;
@@ -36,7 +36,7 @@ export declare class LogService {
             lastPage: number;
         };
     }>;
-    findOne(id: number): Promise<{
+    findOne(id: number, user: any): Promise<{
         user: {
             id: number;
             email: string;
@@ -61,9 +61,9 @@ export declare class LogService {
         id: number;
         createdAt: Date;
         sourceId: number | null;
+        userId: number | null;
         level: import("@prisma/client").$Enums.LogLevel;
         action: import("@prisma/client").$Enums.LogAction | null;
         message: string;
-        userId: number | null;
     }>;
 }

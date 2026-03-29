@@ -1,9 +1,9 @@
 import { LogService } from './log.service';
-import { QueryLogDto } from './dto/query-log.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 export declare class LogController {
     private readonly logService;
     constructor(logService: LogService);
-    findAll(query: QueryLogDto): Promise<{
+    findAll(query: PaginationDto, user: any): Promise<{
         data: ({
             user: {
                 id: number;
@@ -24,10 +24,10 @@ export declare class LogController {
             id: number;
             createdAt: Date;
             sourceId: number | null;
+            userId: number | null;
             level: import("@prisma/client").$Enums.LogLevel;
             action: import("@prisma/client").$Enums.LogAction | null;
             message: string;
-            userId: number | null;
         })[];
         meta: {
             total: number;
@@ -36,7 +36,7 @@ export declare class LogController {
             lastPage: number;
         };
     }>;
-    findOne(id: number): Promise<{
+    findOne(id: number, user: any): Promise<{
         user: {
             id: number;
             email: string;
@@ -61,9 +61,9 @@ export declare class LogController {
         id: number;
         createdAt: Date;
         sourceId: number | null;
+        userId: number | null;
         level: import("@prisma/client").$Enums.LogLevel;
         action: import("@prisma/client").$Enums.LogAction | null;
         message: string;
-        userId: number | null;
     }>;
 }

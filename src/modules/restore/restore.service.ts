@@ -7,14 +7,17 @@ import {
   LogAction,
   LogLevel,
   RestoreStatus,
+  UserRole,
 } from '@prisma/client';
 import PrismaService from 'src/Prisma/prisma.service';
 import { CreateRestoreDto } from './dto/create-restore.dto';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
+import { decrypt } from '../../utils/encryption.util';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class RestoreService {
@@ -38,6 +41,10 @@ export class RestoreService {
 
     if (!backup.source) {
       throw new NotFoundException('Database source not found for this backup');
+    }
+
+    if (currentUser.role !== UserRole.SUPERADMIN && backup.source.userId !== currentUser.id) {
+      throw new NotFoundException('Backup or database source not found or access denied');
     }
 
     const source = backup.source;
@@ -68,22 +75,22 @@ export class RestoreService {
     });
 
     try {
-      const command = [
-        `PGPASSWORD="${source.password}"`,
-        `psql`,
-        `-h "${source.host}"`,
-        `-p "${source.port}"`,
-        `-U "${source.username}"`,
-        `-d "${source.dbName}"`,
-        `< "${backup.filePath}"`,
-      ].join(' ');
+      const decryptedPassword = decrypt(source.password);
 
-      await execAsync(command, {
+      const args = [
+        '-h', source.host,
+        '-p', source.port.toString(),
+        '-U', source.username,
+        '-d', source.dbName,
+        '-f', backup.filePath,
+        '-v', 'ON_ERROR_STOP=1'
+      ];
+
+      await execFileAsync('psql', args, {
         env: {
           ...process.env,
-          PGPASSWORD: source.password,
+          PGPASSWORD: decryptedPassword,
         },
-        shell: '/bin/bash',
       });
 
       const finishedAt = new Date();
@@ -205,46 +212,76 @@ export class RestoreService {
     }
   }
 
-  async findAll() {
-    return this.prisma.restore.findMany({
-      orderBy: {
-        id: 'desc',
+  async findAll(query: PaginationDto, user: any) {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const search = query.search || '';
+    const skip = (page - 1) * limit;
+
+    const baseWhere = user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
+    const searchWhere = search
+      ? { targetDbName: { contains: search, mode: 'insensitive' } }
+      : {};
+
+    const where: any = { ...baseWhere, ...searchWhere };
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.restore.count({ where }),
+      this.prisma.restore.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          id: 'desc',
+        },
+        include: {
+          backup: {
+            select: {
+              id: true,
+              backupName: true,
+              fileName: true,
+              status: true,
+            },
+          },
+          source: {
+            select: {
+              id: true,
+              name: true,
+              dbName: true,
+              host: true,
+              port: true,
+              dbType: true,
+              isActive: true,
+            },
+          },
+          restoredBy: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        lastPage: Math.ceil(total / limit),
       },
-      include: {
-        backup: {
-          select: {
-            id: true,
-            backupName: true,
-            fileName: true,
-            status: true,
-          },
-        },
-        source: {
-          select: {
-            id: true,
-            name: true,
-            dbName: true,
-            host: true,
-            port: true,
-            dbType: true,
-            isActive: true,
-          },
-        },
-        restoredBy: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
-    });
+    };
   }
 
-  async findOne(id: number) {
-    const restore = await this.prisma.restore.findUnique({
-      where: { id },
+  async findOne(id: number, user: any) {
+    const baseWhere = user.role === UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+
+    const restore = await this.prisma.restore.findFirst({
+      where: baseWhere,
       include: {
         backup: {
           select: {

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import PrismaService from 'src/Prisma/prisma.service';
 import { QueryLogDto } from './dto/query-log.dto';
 
@@ -7,12 +7,15 @@ import { QueryLogDto } from './dto/query-log.dto';
 export class LogService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: QueryLogDto) {
+  async findAll(query: QueryLogDto, user: any) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
 
+    const baseWhere = user.role === UserRole.SUPERADMIN ? {} : { userId: user.id };
+
     const where: Prisma.SystemLogWhereInput = {
+      ...baseWhere,
       ...(query.level && { level: query.level }),
       ...(query.action && { action: query.action }),
       ...(query.sourceId && { sourceId: query.sourceId }),
@@ -29,7 +32,8 @@ export class LogService {
       }),
     };
 
-    const [logs, total] = await Promise.all([
+    const [total, logs] = await this.prisma.$transaction([
+      this.prisma.systemLog.count({ where }),
       this.prisma.systemLog.findMany({
         where,
         skip,
@@ -59,7 +63,6 @@ export class LogService {
           },
         },
       }),
-      this.prisma.systemLog.count({ where }),
     ]);
 
     return {
@@ -73,9 +76,11 @@ export class LogService {
     };
   }
 
-  async findOne(id: number) {
-    const log = await this.prisma.systemLog.findUnique({
-      where: { id },
+  async findOne(id: number, user: any) {
+    const baseWhere = user.role === UserRole.SUPERADMIN ? { id } : { id, userId: user.id };
+
+    const log = await this.prisma.systemLog.findFirst({
+      where: baseWhere,
       include: {
         source: {
           select: {

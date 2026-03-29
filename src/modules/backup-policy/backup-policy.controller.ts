@@ -8,6 +8,7 @@ import {
     Patch,
     Post,
     Put,
+    Query,
     UseGuards,
 } from '@nestjs/common';
 import {
@@ -19,16 +20,18 @@ import {
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { BackupPolicyService } from './backup-policy.service';
 import { CreateBackupPolicyDto } from './dto/create-backup-policy.dto';
 import { UpdateBackupPolicyDto } from './dto/update-backup-policy.dto';
 import { BackupPolicyScheduler } from './backup-policy.scheduler';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Backup Policies')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
 @Controller('backup-policies')
 export class BackupPolicyController {
     constructor(private readonly backupPolicyService: BackupPolicyService, private readonly backupPolicyScheduler: BackupPolicyScheduler) { }
@@ -43,8 +46,8 @@ export class BackupPolicyController {
     @ApiOperation({ summary: 'Get all backup policies' })
     @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.OPERATOR)
     @Get()
-    findAll() {
-        return this.backupPolicyService.findAll();
+    findAll(@Query() query: PaginationDto, @CurrentUser() user: any) {
+        return this.backupPolicyService.findAll(query, user);
     }
 
     @ApiOperation({ summary: 'List active cron jobs' })
@@ -58,8 +61,8 @@ export class BackupPolicyController {
     @ApiParam({ name: 'id', example: 1 })
     @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.OPERATOR)
     @Get(':id')
-    findOne(@Param('id', ParseIntPipe) id: number) {
-        return this.backupPolicyService.findOne(id);
+    findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+        return this.backupPolicyService.findOne(id, user);
     }
 
     @ApiOperation({ summary: 'Update backup policy' })
@@ -84,9 +87,9 @@ export class BackupPolicyController {
 
     @ApiOperation({ summary: 'Delete backup policy' })
     @ApiParam({ name: 'id', example: 1 })
-    @Roles(UserRole.SUPERADMIN)
+    @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
     @Delete(':id')
-    remove(@Param('id', ParseIntPipe) id: number) {
-        return this.backupPolicyService.remove(id);
+    remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+        return this.backupPolicyService.remove(id, user);
     }
 }

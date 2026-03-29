@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -21,12 +22,14 @@ import { BackupService } from './backup.service';
 import { CreateBackupDto } from './dto/create-backup.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Backups')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, SubscriptionGuard)
 @Controller('backups')
 export class BackupController {
   constructor(private readonly backupService: BackupService) {}
@@ -41,15 +44,15 @@ export class BackupController {
   @ApiOperation({ summary: 'Get all backups' })
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.OPERATOR)
   @Get()
-  findAll() {
-    return this.backupService.findAll();
+  findAll(@Query() query: PaginationDto, @CurrentUser() user: any) {
+    return this.backupService.findAll(query, user);
   }
 
   @ApiOperation({ summary: 'Get backup statistics' })
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.OPERATOR)
   @Get('stats/overview')
-  getStats() {
-    return this.backupService.getStats();
+  getStats(@CurrentUser() user: any) {
+    return this.backupService.getStats(user);
   }
 
   @ApiOperation({ summary: 'Download backup file by id' })
@@ -59,8 +62,9 @@ export class BackupController {
   async download(
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
+    @CurrentUser() user: any,
   ) {
-    const backup = await this.backupService.getBackupFile(id);
+    const backup = await this.backupService.getBackupFile(id, user);
     return res.download(backup.filePath, backup.fileName);
   }
 
@@ -68,13 +72,13 @@ export class BackupController {
   @ApiParam({ name: 'id', example: 1 })
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.OPERATOR)
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.backupService.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.backupService.findOne(id, user);
   }
 
   @ApiOperation({ summary: 'Delete backup by id' })
   @ApiParam({ name: 'id', example: 1 })
-  @Roles(UserRole.SUPERADMIN)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
     return this.backupService.remove(id, user);

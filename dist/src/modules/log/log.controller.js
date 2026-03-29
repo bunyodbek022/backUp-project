@@ -18,19 +18,21 @@ const swagger_1 = require("@nestjs/swagger");
 const client_1 = require("@prisma/client");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
+const subscription_guard_1 = require("../auth/guards/subscription.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 const log_service_1 = require("./log.service");
-const query_log_dto_1 = require("./dto/query-log.dto");
+const pagination_dto_1 = require("../../common/dto/pagination.dto");
 let LogController = class LogController {
     logService;
     constructor(logService) {
         this.logService = logService;
     }
-    findAll(query) {
-        return this.logService.findAll(query);
+    findAll(query, user) {
+        return this.logService.findAll(query, user);
     }
-    findOne(id) {
-        return this.logService.findOne(id);
+    findOne(id, user) {
+        return this.logService.findOne(id, user);
     }
 };
 exports.LogController = LogController;
@@ -39,8 +41,9 @@ __decorate([
     (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.SUPERADMIN, client_1.UserRole.OPERATOR),
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [query_log_dto_1.QueryLogDto]),
+    __metadata("design:paramtypes", [pagination_dto_1.PaginationDto, Object]),
     __metadata("design:returntype", void 0)
 ], LogController.prototype, "findAll", null);
 __decorate([
@@ -49,14 +52,15 @@ __decorate([
     (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.SUPERADMIN, client_1.UserRole.OPERATOR),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], LogController.prototype, "findOne", null);
 exports.LogController = LogController = __decorate([
     (0, swagger_1.ApiTags)('Logs'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, subscription_guard_1.SubscriptionGuard),
     (0, common_1.Controller)('logs'),
     __metadata("design:paramtypes", [log_service_1.LogService])
 ], LogController);

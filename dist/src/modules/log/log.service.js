@@ -14,17 +14,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LogService = void 0;
 const common_1 = require("@nestjs/common");
+const client_1 = require("@prisma/client");
 const prisma_service_1 = __importDefault(require("../../Prisma/prisma.service"));
 let LogService = class LogService {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async findAll(query) {
+    async findAll(query, user) {
         const page = query.page ?? 1;
         const limit = query.limit ?? 10;
         const skip = (page - 1) * limit;
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? {} : { userId: user.id };
         const where = {
+            ...baseWhere,
             ...(query.level && { level: query.level }),
             ...(query.action && { action: query.action }),
             ...(query.sourceId && { sourceId: query.sourceId }),
@@ -40,7 +43,8 @@ let LogService = class LogService {
                 ],
             }),
         };
-        const [logs, total] = await Promise.all([
+        const [total, logs] = await this.prisma.$transaction([
+            this.prisma.systemLog.count({ where }),
             this.prisma.systemLog.findMany({
                 where,
                 skip,
@@ -70,7 +74,6 @@ let LogService = class LogService {
                     },
                 },
             }),
-            this.prisma.systemLog.count({ where }),
         ]);
         return {
             data: logs,
@@ -82,9 +85,10 @@ let LogService = class LogService {
             },
         };
     }
-    async findOne(id) {
-        const log = await this.prisma.systemLog.findUnique({
-            where: { id },
+    async findOne(id, user) {
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? { id } : { id, userId: user.id };
+        const log = await this.prisma.systemLog.findFirst({
+            where: baseWhere,
             include: {
                 source: {
                     select: {

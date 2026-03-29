@@ -22,6 +22,8 @@ const restore_module_1 = require("./modules/restore/restore.module");
 const log_module_1 = require("./modules/log/log.module");
 const schedule_1 = require("@nestjs/schedule");
 const backup_policy_module_1 = require("./modules/backup-policy/backup-policy.module");
+const subscription_plan_module_1 = require("./modules/subscription-plan/subscription-plan.module");
+const superadmin_module_1 = require("./modules/superadmin/superadmin.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -39,6 +41,8 @@ exports.AppModule = AppModule = __decorate([
             restore_module_1.RestoreModule,
             log_module_1.LogModule,
             backup_policy_module_1.BackupPolicyModule,
+            subscription_plan_module_1.SubscriptionPlanModule,
+            superadmin_module_1.SuperadminModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

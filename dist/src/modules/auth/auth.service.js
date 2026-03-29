@@ -51,6 +51,7 @@ const jwt_1 = require("@nestjs/jwt");
 const prisma_service_1 = __importDefault(require("../../Prisma/prisma.service"));
 const bcrypt = __importStar(require("bcryptjs"));
 const client_1 = require("@prisma/client");
+const common_2 = require("@nestjs/common");
 let AuthService = class AuthService {
     prisma;
     jwtService;
@@ -94,6 +95,53 @@ let AuthService = class AuthService {
                 fullName: user.fullName,
                 email: user.email,
                 role: user.role,
+            },
+        };
+    }
+    async register(dto) {
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
+        if (existingUser) {
+            throw new common_2.BadRequestException('User with this email already exists');
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(dto.password, salt);
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+        const user = await this.prisma.user.create({
+            data: {
+                fullName: dto.fullName,
+                email: dto.email,
+                password: hashedPassword,
+                role: client_1.UserRole.ADMIN,
+                trialEndsAt,
+                subscriptionStatus: 'trialing',
+            },
+        });
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        };
+        const accessToken = await this.jwtService.signAsync(payload);
+        await this.prisma.systemLog.create({
+            data: {
+                level: client_1.LogLevel.INFO,
+                action: client_1.LogAction.LOGIN,
+                message: `New user registered: ${user.email}`,
+                userId: user.id,
+            },
+        });
+        return {
+            message: 'Registration successful',
+            accessToken,
+            user: {
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+                trialEndsAt: user.trialEndsAt,
             },
         };
     }

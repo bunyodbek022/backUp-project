@@ -18,12 +18,14 @@ const swagger_1 = require("@nestjs/swagger");
 const client_1 = require("@prisma/client");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
+const subscription_guard_1 = require("../auth/guards/subscription.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 const backup_policy_service_1 = require("./backup-policy.service");
 const create_backup_policy_dto_1 = require("./dto/create-backup-policy.dto");
 const update_backup_policy_dto_1 = require("./dto/update-backup-policy.dto");
 const backup_policy_scheduler_1 = require("./backup-policy.scheduler");
+const pagination_dto_1 = require("../../common/dto/pagination.dto");
 let BackupPolicyController = class BackupPolicyController {
     backupPolicyService;
     backupPolicyScheduler;
@@ -34,14 +36,14 @@ let BackupPolicyController = class BackupPolicyController {
     create(dto, user) {
         return this.backupPolicyService.create(dto, user);
     }
-    findAll() {
-        return this.backupPolicyService.findAll();
+    findAll(query, user) {
+        return this.backupPolicyService.findAll(query, user);
     }
     listJobs() {
         return this.backupPolicyScheduler.listJobs();
     }
-    findOne(id) {
-        return this.backupPolicyService.findOne(id);
+    findOne(id, user) {
+        return this.backupPolicyService.findOne(id, user);
     }
     update(id, dto, user) {
         return this.backupPolicyService.update(id, dto, user);
@@ -49,8 +51,8 @@ let BackupPolicyController = class BackupPolicyController {
     toggleActive(id, user) {
         return this.backupPolicyService.toggleActive(id, user);
     }
-    remove(id) {
-        return this.backupPolicyService.remove(id);
+    remove(id, user) {
+        return this.backupPolicyService.remove(id, user);
     }
 };
 exports.BackupPolicyController = BackupPolicyController;
@@ -68,8 +70,10 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Get all backup policies' }),
     (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.SUPERADMIN, client_1.UserRole.OPERATOR),
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [pagination_dto_1.PaginationDto, Object]),
     __metadata("design:returntype", void 0)
 ], BackupPolicyController.prototype, "findAll", null);
 __decorate([
@@ -86,8 +90,9 @@ __decorate([
     (0, roles_decorator_1.Roles)(client_1.UserRole.ADMIN, client_1.UserRole.SUPERADMIN, client_1.UserRole.OPERATOR),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], BackupPolicyController.prototype, "findOne", null);
 __decorate([
@@ -116,17 +121,18 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Delete backup policy' }),
     (0, swagger_1.ApiParam)({ name: 'id', example: 1 }),
-    (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN, client_1.UserRole.ADMIN),
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], BackupPolicyController.prototype, "remove", null);
 exports.BackupPolicyController = BackupPolicyController = __decorate([
     (0, swagger_1.ApiTags)('Backup Policies'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, subscription_guard_1.SubscriptionGuard),
     (0, common_1.Controller)('backup-policies'),
     __metadata("design:paramtypes", [backup_policy_service_1.BackupPolicyService, backup_policy_scheduler_1.BackupPolicyScheduler])
 ], BackupPolicyController);
