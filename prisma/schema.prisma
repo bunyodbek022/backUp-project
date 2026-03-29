@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int         @id @default(autoincrement())
+  fullName  String      @map("full_name")
+  email     String      @unique
+  password  String
+  role      UserRole    @default(ADMIN)
+  isActive  Boolean     @default(true) @map("is_active")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  backups   Backup[]    @relation("BackupCreatedBy")
+  restores  Restore[]   @relation("RestoreCreatedBy")
+  logs      SystemLog[]
+
+  @@map("users")
+}
+
+model DatabaseSource {
+  id        Int            @id @default(autoincrement())
+  name      String
+  dbType    DatabaseType   @default(POSTGRESQL) @map("db_type")
+  host      String
+  port      Int            @default(5432)
+  dbName    String         @map("db_name")
+  username  String
+  password  String
+  isActive  Boolean        @default(true) @map("is_active")
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+  policies  BackupPolicy[]
+  backups   Backup[]
+  restores  Restore[]
+  logs      SystemLog[]
+
+  @@map("database_sources")
+}
+
+model Backup {
+  id              Int            @id @default(autoincrement())
+  sourceId        Int            @map("source_id")
+  backupName      String         @map("backup_name")
+  fileName        String         @map("file_name")
+  backupType      BackupType     @map("backup_type")
+  filePath        String         @map("file_path")
+  fileSize        BigInt?        @map("file_size")
+  status          BackupStatus   @default(PENDING)
+  startedAt       DateTime       @default(now()) @map("started_at")
+  finishedAt      DateTime?      @map("finished_at")
+  durationSeconds Int?           @map("duration_seconds")
+  checksum        String?
+  storageType     StorageType    @default(LOCAL) @map("storage_type")
+  createdById     Int?           @map("created_by_id")
+  notes           String?
+  errorMessage    String?        @map("error_message")
+  createdBy       User?          @relation("BackupCreatedBy", fields: [createdById], references: [id])
+  source          DatabaseSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  restores        Restore[]
+
+  @@index([sourceId])
+  @@index([status])
+  @@index([startedAt(sort: Desc)])
+  @@map("backups")
+}
+
+model Restore {
+  id              Int            @id @default(autoincrement())
+  backupId        Int?           @map("backup_id")
+  sourceId        Int            @map("source_id")
+  targetDbName    String         @map("target_db_name")
+  status          RestoreStatus  @default(PENDING)
+  startedAt       DateTime       @default(now()) @map("started_at")
+  finishedAt      DateTime?      @map("finished_at")
+  durationSeconds Int?           @map("duration_seconds")
+  restoredById    Int?           @map("restored_by_id")
+  notes           String?
+  errorMessage    String?        @map("error_message")
+  backup          Backup?        @relation(fields: [backupId], references: [id])
+  restoredBy      User?          @relation("RestoreCreatedBy", fields: [restoredById], references: [id])
+  source          DatabaseSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@index([backupId])
+  @@index([status])
+  @@map("restores")
+}
+
+model SystemLog {
+  id        Int             @id @default(autoincrement())
+  level     LogLevel
+  action    LogAction?
+  message   String
+  sourceId  Int?            @map("source_id")
+  userId    Int?            @map("user_id")
+  createdAt DateTime        @default(now()) @map("created_at")
+  source    DatabaseSource? @relation(fields: [sourceId], references: [id])
+  user      User?           @relation(fields: [userId], references: [id])
+
+  @@index([level])
+  @@index([createdAt(sort: Desc)])
+  @@map("system_logs")
+}
+
+model BackupPolicy {
+  id            Int            @id @default(autoincrement())
+  sourceId      Int            @map("source_id")
+  policyName    String         @map("policy_name")
+  backupType    BackupType     @map("backup_type")
+  scheduleCron  String         @map("schedule_cron")
+  retentionDays Int            @default(7) @map("retention_days")
+  maxBackups    Int?           @map("max_backups")
+  isActive      Boolean        @default(true) @map("is_active")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  source        DatabaseSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@map("backup_policies")
+}
+
+enum BackupType {
+  FULL         @map("full")
+  INCREMENTAL  @map("incremental")
+  DIFFERENTIAL @map("differential")
+}
+
+enum BackupStatus {
+  PENDING  @map("pending")
+  RUNNING  @map("running")
+  SUCCESS  @map("success")
+  FAILED   @map("failed")
+  CANCELED @map("canceled")
+}
+
+enum RestoreStatus {
+  PENDING  @map("pending")
+  RUNNING  @map("running")
+  SUCCESS  @map("success")
+  FAILED   @map("failed")
+  CANCELED @map("canceled")
+}
+
+enum LogLevel {
+  INFO  @map("info")
+  WARN  @map("warn")
+  ERROR @map("error")
+  DEBUG @map("debug")
+}
+
+enum DatabaseType {
+  POSTGRESQL @map("postgresql")
+  MYSQL      @map("mysql")
+}
+
+enum StorageType {
+  LOCAL @map("local")
+  S3    @map("s3")
+}
+
+enum UserRole {
+  SUPERADMIN @map("superadmin")
+  ADMIN      @map("admin")
+  OPERATOR   @map("operator")
+}
+
+enum LogAction {
+  BACKUP_CREATE   @map("backup_create")
+  BACKUP_SUCCESS  @map("backup_success")
+  BACKUP_FAILED   @map("backup_failed")
+  RESTORE_CREATE  @map("restore_create")
+  RESTORE_SUCCESS @map("restore_success")
+  RESTORE_FAILED  @map("restore_failed")
+  POLICY_CREATE   @map("policy_create")
+  POLICY_UPDATE   @map("policy_update")
+  LOGIN           @map("login")
+  BACKUP_DELETE   @map("backup_delete")
+}
