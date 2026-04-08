@@ -4,7 +4,7 @@ import { BackupController } from './backup.controller';
 import PrismaModule from 'src/Prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
+  imports: [PrismaModule],
   controllers: [BackupController],
   providers: [BackupService],
 })

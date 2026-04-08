@@ -16,7 +16,7 @@ exports.SubscriptionPlanModule = SubscriptionPlanModule;
 exports.SubscriptionPlanModule = SubscriptionPlanModule = __decorate([
     (0, common_1.Module)({
         controllers: [subscription_plan_controller_1.SubscriptionPlanController],
-        providers: [subscription_plan_service_1.SubscriptionPlanService]
+        providers: [subscription_plan_service_1.SubscriptionPlanService],
     })
 ], SubscriptionPlanModule);
 //# sourceMappingURL=subscription-plan.module.js.map

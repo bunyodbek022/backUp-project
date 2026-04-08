@@ -61,7 +61,9 @@ export class BackupPolicyScheduler implements OnModuleInit {
       }
 
       const job = new CronJob(policy.scheduleCron, async () => {
-        this.logger.log(`Running backup policy #${policy.id} (${policy.policyName})`);
+        this.logger.log(
+          `Running backup policy #${policy.id} (${policy.policyName})`,
+        );
 
         try {
           await this.backupService.createBackup(
@@ -128,7 +130,7 @@ export class BackupPolicyScheduler implements OnModuleInit {
     }
   }
 
-  async listJobs() {
+  listJobs() {
     const jobs = this.schedulerRegistry.getCronJobs();
 
     const result: Array<{ name: string; nextRun: string | null }> = [];

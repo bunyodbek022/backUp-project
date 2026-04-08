@@ -116,7 +116,9 @@ let BackupPolicyService = class BackupPolicyService {
         };
     }
     async findOne(id, user) {
-        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN
+            ? { id }
+            : { id, source: { userId: user.id } };
         const policy = await this.prisma.backupPolicy.findFirst({
             where: baseWhere,
             include: {

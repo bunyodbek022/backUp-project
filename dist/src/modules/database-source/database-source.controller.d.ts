@@ -45,4 +45,14 @@ export declare class DatabaseSourceController {
         dbName: string;
         username: string;
     }>;
+    testConnection(id: number, user: any): Promise<{
+        success: boolean;
+        message: any;
+    }>;
+    getTables(id: number, user: any): Promise<string[]>;
+    getTableData(id: number, tableName: string, limit: string, offset: string, user: any): Promise<{
+        columns: any;
+        rows: any;
+        total: number;
+    }>;
 }

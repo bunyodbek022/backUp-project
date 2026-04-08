@@ -107,7 +107,7 @@ let BackupPolicyScheduler = BackupPolicyScheduler_1 = class BackupPolicySchedule
             this.logger.log(`Cron job removed: ${jobName}`);
         }
     }
-    async listJobs() {
+    listJobs() {
         const jobs = this.schedulerRegistry.getCronJobs();
         const result = [];
         jobs.forEach((job, key) => {

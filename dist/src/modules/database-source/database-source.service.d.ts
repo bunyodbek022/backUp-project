@@ -46,4 +46,14 @@ export declare class DatabaseSourceService {
         dbName: string;
         username: string;
     }>;
+    testConnection(id: number, user: any): Promise<{
+        success: boolean;
+        message: any;
+    }>;
+    getTables(id: number, user: any): Promise<string[]>;
+    getTableData(id: number, tableName: string, user: any, limit?: number, offset?: number): Promise<{
+        columns: any;
+        rows: any;
+        total: number;
+    }>;
 }

@@ -21,10 +21,10 @@ export declare class BackupPolicyScheduler implements OnModuleInit {
         isActive: boolean;
     }): void;
     removePolicyJob(policyId: number): void;
-    listJobs(): Promise<{
+    listJobs(): {
         name: string;
         nextRun: string | null;
-    }[]>;
+    }[];
     private getJobName;
     private applyRetention;
 }

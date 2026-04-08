@@ -105,12 +105,18 @@ let BackupService = class BackupService {
         try {
             const decryptedPassword = (0, encryption_util_1.decrypt)(source.password);
             const args = [
-                '-h', source.host,
-                '-p', source.port.toString(),
-                '-U', source.username,
-                '-d', source.dbName,
-                '-F', 'p',
-                '-f', filePath
+                '-h',
+                source.host,
+                '-p',
+                source.port.toString(),
+                '-U',
+                source.username,
+                '-d',
+                source.dbName,
+                '-F',
+                'p',
+                '-f',
+                filePath,
             ];
             await execFileAsync('pg_dump', args, {
                 env: {
@@ -266,7 +272,9 @@ let BackupService = class BackupService {
         };
     }
     async findOne(id, user) {
-        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN
+            ? { id }
+            : { id, source: { userId: user.id } };
         const backup = await this.prisma.backup.findFirst({
             where: baseWhere,
             include: {
@@ -300,7 +308,9 @@ let BackupService = class BackupService {
         return this.serializeBackup(backup);
     }
     async getBackupFile(id, user) {
-        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN
+            ? { id }
+            : { id, source: { userId: user.id } };
         const backup = await this.prisma.backup.findFirst({
             where: baseWhere,
         });
@@ -320,7 +330,9 @@ let BackupService = class BackupService {
         return { ...backup, filePath };
     }
     async remove(id, currentUser) {
-        const baseWhere = currentUser.role === client_1.UserRole.SUPERADMIN ? { id } : { id, source: { userId: currentUser.id } };
+        const baseWhere = currentUser.role === client_1.UserRole.SUPERADMIN
+            ? { id }
+            : { id, source: { userId: currentUser.id } };
         const backup = await this.prisma.backup.findFirst({
             where: baseWhere,
             include: {
@@ -357,7 +369,7 @@ let BackupService = class BackupService {
     }
     async getStats(user) {
         const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
-        const [totalBackups, successBackups, failedBackups, runningBackups, latestBackup] = await Promise.all([
+        const [totalBackups, successBackups, failedBackups, runningBackups, latestBackup,] = await Promise.all([
             this.prisma.backup.count({ where: baseWhere }),
             this.prisma.backup.count({
                 where: { status: client_1.BackupStatus.SUCCESS, ...baseWhere },

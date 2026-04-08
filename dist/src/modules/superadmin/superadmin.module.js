@@ -16,7 +16,7 @@ exports.SuperadminModule = SuperadminModule;
 exports.SuperadminModule = SuperadminModule = __decorate([
     (0, common_1.Module)({
         controllers: [superadmin_controller_1.SuperadminController],
-        providers: [superadmin_service_1.SuperadminService]
+        providers: [superadmin_service_1.SuperadminService],
     })
 ], SuperadminModule);
 //# sourceMappingURL=superadmin.module.js.map

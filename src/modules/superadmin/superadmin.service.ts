@@ -8,11 +8,11 @@ export class SuperadminService {
 
   async getStats() {
     const totalUsers = await this.prisma.user.count();
-    
+
     const activeSubscribers = await this.prisma.user.count({
       where: { subscriptionStatus: 'active' },
     });
-    
+
     const trialingUsers = await this.prisma.user.count({
       where: { subscriptionStatus: 'trialing' },
     });
@@ -71,7 +71,7 @@ export class SuperadminService {
       ? {
           OR: [
             { fullName: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } }
+            { email: { contains: search, mode: 'insensitive' as const } },
           ],
         }
       : {};
@@ -106,7 +106,10 @@ export class SuperadminService {
         skip,
         take: limit,
         orderBy: { startedAt: 'desc' },
-        include: { source: true, createdBy: { select: { email: true, fullName: true } } },
+        include: {
+          source: true,
+          createdBy: { select: { email: true, fullName: true } },
+        },
       }),
       this.prisma.backup.count({ where }),
     ]);
@@ -144,23 +147,42 @@ export class SuperadminService {
       where: { subscriptionStatus: 'active' },
       include: { plan: true },
     });
-    
+
     const currentMRR = activeUsers.reduce((sum, user) => {
       return sum + (user.plan ? Number(user.plan.price) : 0);
     }, 0);
 
     // Generate 12 months of data, ending with current month
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     const currentDate = new Date();
-    
+
     const chartData: { name: string; revenue: number }[] = [];
     for (let i = 11; i >= 0; i--) {
-      const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const d = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() - i,
+        1,
+      );
       const isCurrentMonth = i === 0;
       chartData.push({
         name: months[d.getMonth()],
         // Mock a representative trend for visual purposes
-        revenue: isCurrentMonth ? currentMRR : Math.max(0, currentMRR - (i * 15) + (Math.random() * 10 - 5)),
+        revenue: isCurrentMonth
+          ? currentMRR
+          : Math.max(0, currentMRR - i * 15 + (Math.random() * 10 - 5)),
       });
     }
 

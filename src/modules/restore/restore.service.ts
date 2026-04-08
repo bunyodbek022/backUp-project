@@ -3,12 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  LogAction,
-  LogLevel,
-  RestoreStatus,
-  UserRole,
-} from '@prisma/client';
+import { LogAction, LogLevel, RestoreStatus, UserRole } from '@prisma/client';
 import PrismaService from 'src/Prisma/prisma.service';
 import { CreateRestoreDto } from './dto/create-restore.dto';
 import { execFile } from 'child_process';
@@ -43,8 +38,13 @@ export class RestoreService {
       throw new NotFoundException('Database source not found for this backup');
     }
 
-    if (currentUser.role !== UserRole.SUPERADMIN && backup.source.userId !== currentUser.id) {
-      throw new NotFoundException('Backup or database source not found or access denied');
+    if (
+      currentUser.role !== UserRole.SUPERADMIN &&
+      backup.source.userId !== currentUser.id
+    ) {
+      throw new NotFoundException(
+        'Backup or database source not found or access denied',
+      );
     }
 
     const source = backup.source;
@@ -78,12 +78,18 @@ export class RestoreService {
       const decryptedPassword = decrypt(source.password);
 
       const args = [
-        '-h', source.host,
-        '-p', source.port.toString(),
-        '-U', source.username,
-        '-d', source.dbName,
-        '-f', backup.filePath,
-        '-v', 'ON_ERROR_STOP=1'
+        '-h',
+        source.host,
+        '-p',
+        source.port.toString(),
+        '-U',
+        source.username,
+        '-d',
+        source.dbName,
+        '-f',
+        backup.filePath,
+        '-v',
+        'ON_ERROR_STOP=1',
       ];
 
       await execFileAsync('psql', args, {
@@ -218,7 +224,8 @@ export class RestoreService {
     const search = query.search || '';
     const skip = (page - 1) * limit;
 
-    const baseWhere = user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
+    const baseWhere =
+      user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
     const searchWhere = search
       ? { targetDbName: { contains: search, mode: 'insensitive' } }
       : {};
@@ -278,7 +285,10 @@ export class RestoreService {
   }
 
   async findOne(id: number, user: any) {
-    const baseWhere = user.role === UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+    const baseWhere =
+      user.role === UserRole.SUPERADMIN
+        ? { id }
+        : { id, source: { userId: user.id } };
 
     const restore = await this.prisma.restore.findFirst({
       where: baseWhere,

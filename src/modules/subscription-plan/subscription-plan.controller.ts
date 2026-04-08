@@ -23,7 +23,9 @@ import { UserRole } from '@prisma/client';
 @ApiTags('Subscription Plans')
 @Controller('subscription-plans')
 export class SubscriptionPlanController {
-  constructor(private readonly subscriptionPlanService: SubscriptionPlanService) {}
+  constructor(
+    private readonly subscriptionPlanService: SubscriptionPlanService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all subscription plans' })

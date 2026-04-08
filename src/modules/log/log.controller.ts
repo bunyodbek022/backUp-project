@@ -10,7 +10,6 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
@@ -20,7 +19,6 @@ import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { LogService } from './log.service';
-import { QueryLogDto } from './dto/query-log.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Logs')

@@ -14,22 +14,22 @@ import { SubscriptionPlanModule } from './modules/subscription-plan/subscription
 import { SuperadminModule } from './modules/superadmin/superadmin.module';
 
 @Module({
-    imports: [
-        ConfigModule.forRoot({
-        isGlobal: true,
-        }),
-        ScheduleModule.forRoot(),
-        BackupModule,
-        DatabaseSourceModule,
-        AuthModule,
-        PrismaModule,
-        RestoreModule,
-        LogModule,
-        BackupPolicyModule,
-        SubscriptionPlanModule,
-        SuperadminModule,
-    ],
-    controllers: [AppController],
-    providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    ScheduleModule.forRoot(),
+    BackupModule,
+    DatabaseSourceModule,
+    AuthModule,
+    PrismaModule,
+    RestoreModule,
+    LogModule,
+    BackupPolicyModule,
+    SubscriptionPlanModule,
+    SuperadminModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

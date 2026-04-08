@@ -56,7 +56,7 @@ __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: 'backup' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
-    (0, class_transformer_1.Transform)(({ value }) => value?.trim()),
+    (0, class_transformer_1.Transform)(({ value }) => (typeof value === 'string' ? value.trim() : value)),
     __metadata("design:type", String)
 ], QueryLogDto.prototype, "search", void 0);
 __decorate([

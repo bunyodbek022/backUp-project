@@ -75,7 +75,8 @@ let RestoreService = class RestoreService {
         if (!backup.source) {
             throw new common_1.NotFoundException('Database source not found for this backup');
         }
-        if (currentUser.role !== client_1.UserRole.SUPERADMIN && backup.source.userId !== currentUser.id) {
+        if (currentUser.role !== client_1.UserRole.SUPERADMIN &&
+            backup.source.userId !== currentUser.id) {
             throw new common_1.NotFoundException('Backup or database source not found or access denied');
         }
         const source = backup.source;
@@ -102,12 +103,18 @@ let RestoreService = class RestoreService {
         try {
             const decryptedPassword = (0, encryption_util_1.decrypt)(source.password);
             const args = [
-                '-h', source.host,
-                '-p', source.port.toString(),
-                '-U', source.username,
-                '-d', source.dbName,
-                '-f', backup.filePath,
-                '-v', 'ON_ERROR_STOP=1'
+                '-h',
+                source.host,
+                '-p',
+                source.port.toString(),
+                '-U',
+                source.username,
+                '-d',
+                source.dbName,
+                '-f',
+                backup.filePath,
+                '-v',
+                'ON_ERROR_STOP=1',
             ];
             await execFileAsync('psql', args, {
                 env: {
@@ -285,7 +292,9 @@ let RestoreService = class RestoreService {
         };
     }
     async findOne(id, user) {
-        const baseWhere = user.role === client_1.UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+        const baseWhere = user.role === client_1.UserRole.SUPERADMIN
+            ? { id }
+            : { id, source: { userId: user.id } };
         const restore = await this.prisma.restore.findFirst({
             where: baseWhere,
             include: {

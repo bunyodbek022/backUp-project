@@ -21,18 +21,18 @@ export declare class SuperadminService {
     }>;
     getSystemLogs(): Promise<({
         user: {
-            fullName: string;
             email: string;
+            fullName: string;
             role: import("@prisma/client").$Enums.UserRole;
         } | null;
     } & {
         id: number;
         createdAt: Date;
+        sourceId: number | null;
+        userId: number | null;
         level: import("@prisma/client").$Enums.LogLevel;
         action: import("@prisma/client").$Enums.LogAction | null;
         message: string;
-        sourceId: number | null;
-        userId: number | null;
     })[]>;
     getUsers(query: PaginationDto): Promise<{
         data: ({
@@ -49,14 +49,14 @@ export declare class SuperadminService {
                 stripePriceId: string | null;
             } | null;
         } & {
-            subscriptionStatus: string | null;
             id: number;
-            fullName: string;
             email: string;
+            fullName: string;
             password: string;
             role: import("@prisma/client").$Enums.UserRole;
             isActive: boolean;
             trialEndsAt: Date | null;
+            subscriptionStatus: string | null;
             stripeCustomerId: string | null;
             planId: number | null;
             createdAt: Date;
@@ -69,6 +69,10 @@ export declare class SuperadminService {
     }>;
     getBackups(query: PaginationDto): Promise<{
         data: ({
+            createdBy: {
+                email: string;
+                fullName: string;
+            } | null;
             source: {
                 id: number;
                 password: string;
@@ -83,16 +87,13 @@ export declare class SuperadminService {
                 dbName: string;
                 username: string;
             };
-            createdBy: {
-                fullName: string;
-                email: string;
-            } | null;
         } & {
             id: number;
             sourceId: number;
+            backupType: import("@prisma/client").$Enums.BackupType;
+            notes: string | null;
             backupName: string;
             fileName: string;
-            backupType: import("@prisma/client").$Enums.BackupType;
             filePath: string;
             fileSize: bigint | null;
             status: import("@prisma/client").$Enums.BackupStatus;
@@ -101,9 +102,8 @@ export declare class SuperadminService {
             durationSeconds: number | null;
             checksum: string | null;
             storageType: import("@prisma/client").$Enums.StorageType;
-            createdById: number | null;
-            notes: string | null;
             errorMessage: string | null;
+            createdById: number | null;
         })[];
         total: number;
         page: number;
@@ -113,8 +113,8 @@ export declare class SuperadminService {
     getDatabases(query: PaginationDto): Promise<{
         data: ({
             user: {
-                fullName: string;
                 email: string;
+                fullName: string;
             };
         } & {
             id: number;

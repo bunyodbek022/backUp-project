@@ -134,6 +134,7 @@ exports.BackupPolicyController = BackupPolicyController = __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, subscription_guard_1.SubscriptionGuard),
     (0, common_1.Controller)('backup-policies'),
-    __metadata("design:paramtypes", [backup_policy_service_1.BackupPolicyService, backup_policy_scheduler_1.BackupPolicyScheduler])
+    __metadata("design:paramtypes", [backup_policy_service_1.BackupPolicyService,
+        backup_policy_scheduler_1.BackupPolicyScheduler])
 ], BackupPolicyController);
 //# sourceMappingURL=backup-policy.controller.js.map

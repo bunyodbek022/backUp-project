@@ -48,6 +48,15 @@ let DatabaseSourceController = class DatabaseSourceController {
     remove(id, user) {
         return this.databaseSourceService.remove(id, user);
     }
+    testConnection(id, user) {
+        return this.databaseSourceService.testConnection(id, user);
+    }
+    getTables(id, user) {
+        return this.databaseSourceService.getTables(id, user);
+    }
+    getTableData(id, tableName, limit, offset, user) {
+        return this.databaseSourceService.getTableData(id, tableName, user, limit ? parseInt(limit, 10) : 50, offset ? parseInt(offset, 10) : 0);
+    }
 };
 exports.DatabaseSourceController = DatabaseSourceController;
 __decorate([
@@ -115,6 +124,43 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], DatabaseSourceController.prototype, "remove", null);
+__decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'Test a database connection' }),
+    (0, swagger_1.ApiParam)({ name: 'id', example: 1 }),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN, client_1.UserRole.ADMIN),
+    (0, common_1.Get)(':id/test-connection'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], DatabaseSourceController.prototype, "testConnection", null);
+__decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'Get list of tables in the connected database' }),
+    (0, swagger_1.ApiParam)({ name: 'id', example: 1 }),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN, client_1.UserRole.ADMIN, client_1.UserRole.OPERATOR),
+    (0, common_1.Get)(':id/tables'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], DatabaseSourceController.prototype, "getTables", null);
+__decorate([
+    (0, swagger_1.ApiOperation)({ summary: 'Get rows and columns from a specific table' }),
+    (0, swagger_1.ApiParam)({ name: 'id', example: 1 }),
+    (0, swagger_1.ApiParam)({ name: 'tableName', example: 'users' }),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.SUPERADMIN, client_1.UserRole.ADMIN, client_1.UserRole.OPERATOR),
+    (0, common_1.Get)(':id/tables/:tableName/data'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Param)('tableName')),
+    __param(2, (0, common_1.Query)('limit')),
+    __param(3, (0, common_1.Query)('offset')),
+    __param(4, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, String, String, String, Object]),
+    __metadata("design:returntype", void 0)
+], DatabaseSourceController.prototype, "getTableData", null);
 exports.DatabaseSourceController = DatabaseSourceController = __decorate([
     (0, swagger_1.ApiTags)('Database Sources'),
     (0, swagger_1.ApiBearerAuth)(),

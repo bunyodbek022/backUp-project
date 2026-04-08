@@ -58,10 +58,10 @@ export declare class BackupPolicyController {
             lastPage: number;
         };
     }>;
-    listJobs(): Promise<{
+    listJobs(): {
         name: string;
         nextRun: string | null;
-    }[]>;
+    }[];
     findOne(id: number, user: any): Promise<{
         source: {
             id: number;

@@ -32,7 +32,7 @@ export class SubscriptionGuard implements CanActivate {
     }
 
     const now = new Date();
-    
+
     // Check if user has an active subscription
     if (user.subscriptionStatus === 'active') {
       return true;

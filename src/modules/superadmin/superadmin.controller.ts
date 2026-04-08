@@ -40,7 +40,9 @@ export class SuperadminController {
   }
 
   @Get('databases')
-  @ApiOperation({ summary: 'Get all database sources with pagination and search' })
+  @ApiOperation({
+    summary: 'Get all database sources with pagination and search',
+  })
   getDatabases(@Query() query: PaginationDto) {
     return this.superadminService.getDatabases(query);
   }

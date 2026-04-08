@@ -31,7 +31,7 @@ export class QueryLogDto {
   @ApiPropertyOptional({ example: 'backup' })
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   search?: string;
 
   @ApiPropertyOptional({ example: 1, default: 1 })

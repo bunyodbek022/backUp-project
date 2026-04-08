@@ -73,7 +73,7 @@ let SuperadminService = class SuperadminService {
             ? {
                 OR: [
                     { fullName: { contains: search, mode: 'insensitive' } },
-                    { email: { contains: search, mode: 'insensitive' } }
+                    { email: { contains: search, mode: 'insensitive' } },
                 ],
             }
             : {};
@@ -103,7 +103,10 @@ let SuperadminService = class SuperadminService {
                 skip,
                 take: limit,
                 orderBy: { startedAt: 'desc' },
-                include: { source: true, createdBy: { select: { email: true, fullName: true } } },
+                include: {
+                    source: true,
+                    createdBy: { select: { email: true, fullName: true } },
+                },
             }),
             this.prisma.backup.count({ where }),
         ]);
@@ -137,7 +140,20 @@ let SuperadminService = class SuperadminService {
         const currentMRR = activeUsers.reduce((sum, user) => {
             return sum + (user.plan ? Number(user.plan.price) : 0);
         }, 0);
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const months = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+        ];
         const currentDate = new Date();
         const chartData = [];
         for (let i = 11; i >= 0; i--) {
@@ -145,7 +161,9 @@ let SuperadminService = class SuperadminService {
             const isCurrentMonth = i === 0;
             chartData.push({
                 name: months[d.getMonth()],
-                revenue: isCurrentMonth ? currentMRR : Math.max(0, currentMRR - (i * 15) + (Math.random() * 10 - 5)),
+                revenue: isCurrentMonth
+                    ? currentMRR
+                    : Math.max(0, currentMRR - i * 15 + (Math.random() * 10 - 5)),
             });
         }
         return chartData;

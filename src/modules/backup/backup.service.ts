@@ -33,9 +33,10 @@ export class BackupService {
   }
 
   async createBackup(dto: CreateBackupDto, currentUser: any) {
-    const sourceWhere = currentUser.role === UserRole.SUPERADMIN
-      ? { id: dto.sourceId }
-      : { id: dto.sourceId, userId: currentUser.id };
+    const sourceWhere =
+      currentUser.role === UserRole.SUPERADMIN
+        ? { id: dto.sourceId }
+        : { id: dto.sourceId, userId: currentUser.id };
 
     const source = await this.prisma.databaseSource.findFirst({
       where: sourceWhere,
@@ -80,12 +81,18 @@ export class BackupService {
       const decryptedPassword = decrypt(source.password);
 
       const args = [
-        '-h', source.host,
-        '-p', source.port.toString(),
-        '-U', source.username,
-        '-d', source.dbName,
-        '-F', 'p',
-        '-f', filePath
+        '-h',
+        source.host,
+        '-p',
+        source.port.toString(),
+        '-U',
+        source.username,
+        '-d',
+        source.dbName,
+        '-F',
+        'p',
+        '-f',
+        filePath,
       ];
 
       await execFileAsync('pg_dump', args, {
@@ -204,7 +211,8 @@ export class BackupService {
     const search = query.search || '';
     const skip = (page - 1) * limit;
 
-    const baseWhere = user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
+    const baseWhere =
+      user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
     const searchWhere = search
       ? { backupName: { contains: search, mode: 'insensitive' } }
       : {};
@@ -258,7 +266,10 @@ export class BackupService {
   }
 
   async findOne(id: number, user: any) {
-    const baseWhere = user.role === UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+    const baseWhere =
+      user.role === UserRole.SUPERADMIN
+        ? { id }
+        : { id, source: { userId: user.id } };
 
     const backup = await this.prisma.backup.findFirst({
       where: baseWhere,
@@ -296,7 +307,10 @@ export class BackupService {
   }
 
   async getBackupFile(id: number, user: any) {
-    const baseWhere = user.role === UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+    const baseWhere =
+      user.role === UserRole.SUPERADMIN
+        ? { id }
+        : { id, source: { userId: user.id } };
 
     const backup = await this.prisma.backup.findFirst({
       where: baseWhere,
@@ -311,11 +325,18 @@ export class BackupService {
     // Check if file exists at stored path
     if (!filePath || !fs.existsSync(filePath)) {
       // Fallback: try to find it in the current storage/backups directory relative to process.cwd()
-      const fallbackPath = path.join(process.cwd(), 'storage', 'backups', backup.fileName);
+      const fallbackPath = path.join(
+        process.cwd(),
+        'storage',
+        'backups',
+        backup.fileName,
+      );
       if (fs.existsSync(fallbackPath)) {
         filePath = fallbackPath;
       } else {
-        throw new NotFoundException('Backup file not found on disk at stored path or fallback path');
+        throw new NotFoundException(
+          'Backup file not found on disk at stored path or fallback path',
+        );
       }
     }
 
@@ -323,7 +344,10 @@ export class BackupService {
   }
 
   async remove(id: number, currentUser: any) {
-    const baseWhere = currentUser.role === UserRole.SUPERADMIN ? { id } : { id, source: { userId: currentUser.id } };
+    const baseWhere =
+      currentUser.role === UserRole.SUPERADMIN
+        ? { id }
+        : { id, source: { userId: currentUser.id } };
 
     const backup = await this.prisma.backup.findFirst({
       where: baseWhere,
@@ -369,36 +393,42 @@ export class BackupService {
   }
 
   async getStats(user: any) {
-    const baseWhere = user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
+    const baseWhere =
+      user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
 
-    const [totalBackups, successBackups, failedBackups, runningBackups, latestBackup] =
-      await Promise.all([
-        this.prisma.backup.count({ where: baseWhere }),
-        this.prisma.backup.count({
-          where: { status: BackupStatus.SUCCESS, ...baseWhere },
-        }),
-        this.prisma.backup.count({
-          where: { status: BackupStatus.FAILED, ...baseWhere },
-        }),
-        this.prisma.backup.count({
-          where: { status: BackupStatus.RUNNING, ...baseWhere },
-        }),
-        this.prisma.backup.findFirst({
-          where: baseWhere,
-          orderBy: {
-            startedAt: 'desc',
-          },
-          include: {
-            source: {
-              select: {
-                id: true,
-                name: true,
-                dbName: true,
-              },
+    const [
+      totalBackups,
+      successBackups,
+      failedBackups,
+      runningBackups,
+      latestBackup,
+    ] = await Promise.all([
+      this.prisma.backup.count({ where: baseWhere }),
+      this.prisma.backup.count({
+        where: { status: BackupStatus.SUCCESS, ...baseWhere },
+      }),
+      this.prisma.backup.count({
+        where: { status: BackupStatus.FAILED, ...baseWhere },
+      }),
+      this.prisma.backup.count({
+        where: { status: BackupStatus.RUNNING, ...baseWhere },
+      }),
+      this.prisma.backup.findFirst({
+        where: baseWhere,
+        orderBy: {
+          startedAt: 'desc',
+        },
+        include: {
+          source: {
+            select: {
+              id: true,
+              name: true,
+              dbName: true,
             },
           },
-        }),
-      ]);
+        },
+      }),
+    ]);
 
     return {
       totalBackups,

@@ -78,7 +78,9 @@ __decorate([
 ], SuperadminController.prototype, "getBackups", null);
 __decorate([
     (0, common_1.Get)('databases'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get all database sources with pagination and search' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get all database sources with pagination and search',
+    }),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [pagination_dto_1.PaginationDto]),

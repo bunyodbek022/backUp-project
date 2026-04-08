@@ -12,7 +12,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { PaginationDto } from '../../common/dto/pagination.dto';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { DatabaseSourceService } from './database-source.service';
 import { CreateDatabaseSourceDto } from './dto/create-database-source.dto';
@@ -68,7 +73,10 @@ export class DatabaseSourceController {
   @ApiParam({ name: 'id', example: 1 })
   @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
   @Patch(':id/toggle-active')
-  toggleActive(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+  toggleActive(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: any,
+  ) {
     return this.databaseSourceService.toggleActive(id, user);
   }
 
@@ -78,5 +86,48 @@ export class DatabaseSourceController {
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
     return this.databaseSourceService.remove(id, user);
+  }
+
+  @ApiOperation({ summary: 'Test a database connection' })
+  @ApiParam({ name: 'id', example: 1 })
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @Get(':id/test-connection')
+  testConnection(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.databaseSourceService.testConnection(id, user);
+  }
+
+  @ApiOperation({ summary: 'Get list of tables in the connected database' })
+  @ApiParam({ name: 'id', example: 1 })
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.OPERATOR)
+  @Get(':id/tables')
+  getTables(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.databaseSourceService.getTables(id, user);
+  }
+
+  @ApiOperation({ summary: 'Get rows and columns from a specific table' })
+  @ApiParam({ name: 'id', example: 1 })
+  @ApiParam({ name: 'tableName', example: 'users' })
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.OPERATOR)
+  @Get(':id/tables/:tableName/data')
+  getTableData(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('tableName') tableName: string,
+    @Query('limit') limit: string,
+    @Query('offset') offset: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.databaseSourceService.getTableData(
+      id,
+      tableName,
+      user,
+      limit ? parseInt(limit, 10) : 50,
+      offset ? parseInt(offset, 10) : 0,
+    );
   }
 }

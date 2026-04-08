@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { LogAction, LogLevel, UserRole } from '@prisma/client';
 import PrismaService from 'src/Prisma/prisma.service';
 import { CreateBackupPolicyDto } from './dto/create-backup-policy.dto';
@@ -17,9 +14,10 @@ export class BackupPolicyService {
   ) {}
 
   async create(dto: CreateBackupPolicyDto, currentUser: any) {
-    const sourceWhere = currentUser.role === UserRole.SUPERADMIN 
-      ? { id: dto.sourceId } 
-      : { id: dto.sourceId, userId: currentUser.id };
+    const sourceWhere =
+      currentUser.role === UserRole.SUPERADMIN
+        ? { id: dto.sourceId }
+        : { id: dto.sourceId, userId: currentUser.id };
 
     const source = await this.prisma.databaseSource.findFirst({
       where: sourceWhere,
@@ -78,7 +76,8 @@ export class BackupPolicyService {
     const search = query.search || '';
     const skip = (page - 1) * limit;
 
-    const baseWhere = user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
+    const baseWhere =
+      user.role === UserRole.SUPERADMIN ? {} : { source: { userId: user.id } };
     const searchWhere = search
       ? { policyName: { contains: search, mode: 'insensitive' } }
       : {};
@@ -120,7 +119,10 @@ export class BackupPolicyService {
   }
 
   async findOne(id: number, user: any) {
-    const baseWhere = user.role === UserRole.SUPERADMIN ? { id } : { id, source: { userId: user.id } };
+    const baseWhere =
+      user.role === UserRole.SUPERADMIN
+        ? { id }
+        : { id, source: { userId: user.id } };
 
     const policy = await this.prisma.backupPolicy.findFirst({
       where: baseWhere,
@@ -152,9 +154,10 @@ export class BackupPolicyService {
     await this.findOne(id, currentUser);
 
     if (dto.sourceId) {
-      const sourceWhere = currentUser.role === UserRole.SUPERADMIN 
-        ? { id: dto.sourceId } 
-        : { id: dto.sourceId, userId: currentUser.id };
+      const sourceWhere =
+        currentUser.role === UserRole.SUPERADMIN
+          ? { id: dto.sourceId }
+          : { id: dto.sourceId, userId: currentUser.id };
 
       const source = await this.prisma.databaseSource.findFirst({
         where: sourceWhere,

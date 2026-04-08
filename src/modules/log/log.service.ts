@@ -12,7 +12,8 @@ export class LogService {
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const baseWhere = user.role === UserRole.SUPERADMIN ? {} : { userId: user.id };
+    const baseWhere =
+      user.role === UserRole.SUPERADMIN ? {} : { userId: user.id };
 
     const where: Prisma.SystemLogWhereInput = {
       ...baseWhere,
@@ -77,7 +78,8 @@ export class LogService {
   }
 
   async findOne(id: number, user: any) {
-    const baseWhere = user.role === UserRole.SUPERADMIN ? { id } : { id, userId: user.id };
+    const baseWhere =
+      user.role === UserRole.SUPERADMIN ? { id } : { id, userId: user.id };
 
     const log = await this.prisma.systemLog.findFirst({
       where: baseWhere,

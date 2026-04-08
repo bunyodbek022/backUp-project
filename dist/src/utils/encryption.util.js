@@ -65,7 +65,7 @@ function decrypt(text) {
         decrypted = Buffer.concat([decrypted, decipher.final()]);
         return decrypted.toString();
     }
-    catch (error) {
+    catch {
         return text;
     }
 }
